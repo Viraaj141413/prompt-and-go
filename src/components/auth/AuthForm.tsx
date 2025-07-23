@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Bot, Sparkles } from 'lucide-react';
+import { Loader2, Mountain, Sparkles } from 'lucide-react';
 
 interface AuthFormProps {
   onAuthSuccess: () => void;
@@ -83,13 +83,13 @@ export const AuthForm = ({ onAuthSuccess }: AuthFormProps) => {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <div className="relative">
-              <Bot className="h-12 w-12 text-primary" />
+              <Mountain className="h-12 w-12 text-primary" />
               <Sparkles className="h-4 w-4 text-accent absolute -top-1 -right-1" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">AI Browser Assistant</CardTitle>
+          <CardTitle className="text-2xl font-bold peaks-text">PeaksAI</CardTitle>
           <CardDescription>
-            Sign in to start commanding your AI assistant
+            Sign in to start automating with your AI assistant
           </CardDescription>
         </CardHeader>
         <CardContent>

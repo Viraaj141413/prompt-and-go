@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bot, Sparkles, Globe, Zap, Shield, Users } from 'lucide-react';
+import { Mountain, Sparkles, Globe, Zap, Shield, Users, Bot, Cpu, Rocket } from 'lucide-react';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -14,18 +14,18 @@ export const LandingPage = ({ onGetStarted }: LandingPageProps) => {
         <div className="max-w-6xl mx-auto text-center">
           <div className="flex justify-center mb-8">
             <div className="relative">
-              <Bot className="h-20 w-20 text-primary ai-glow" />
-              <Sparkles className="h-8 w-8 text-accent absolute -top-2 -right-2 animate-pulse" />
+              <Mountain className="h-20 w-20 text-primary ai-glow" />
+              <Zap className="h-8 w-8 text-accent absolute -top-2 -right-2 animate-pulse" />
             </div>
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            AI Browser Assistant
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 peaks-text">
+            PeaksAI
           </h1>
           
           <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-            Just tell your AI what you want to do, and it will navigate the web for you. 
-            Order food, book flights, shop online - all with simple natural language commands.
+            The ultimate smart browser automation assistant. Tell PeaksAI what you want to accomplish, 
+            and watch as it creates intelligent browser actions to get things done automatically.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
@@ -42,9 +42,9 @@ export const LandingPage = ({ onGetStarted }: LandingPageProps) => {
           {/* Example Commands */}
           <div className="grid md:grid-cols-3 gap-4 max-w-4xl mx-auto">
             {[
-              '"Order me a latte from Starbucks"',
-              '"Book a flight to Paris next week"',
-              '"Find me the best laptop deals"'
+              '"Order me a coffee and pastry"',
+              '"Find and book the cheapest flight"',
+              '"Research competitors for my startup"'
             ].map((command, index) => (
               <Card key={index} className="bg-card/50 backdrop-blur border border-primary/20">
                 <CardContent className="p-4">
