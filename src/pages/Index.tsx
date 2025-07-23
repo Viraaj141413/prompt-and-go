@@ -1,14 +1,42 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
+import { LandingPage } from '@/components/landing/LandingPage';
+import { AuthForm } from '@/components/auth/AuthForm';
+import { ChatInterface } from '@/components/chat/ChatInterface';
 
-const Index = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
-  );
+interface IndexProps {
+  user: User | null;
+  session: Session | null;
+}
+
+const Index = ({ user, session }: IndexProps) => {
+  const [showAuth, setShowAuth] = useState(false);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const handleAuthSuccess = () => {
+    setShowAuth(false);
+  };
+
+  const handleGetStarted = () => {
+    setShowAuth(true);
+  };
+
+  // If user is authenticated, show chat interface
+  if (user && session) {
+    return <ChatInterface user={user} onSignOut={handleSignOut} />;
+  }
+
+  // If showing auth form
+  if (showAuth) {
+    return <AuthForm onAuthSuccess={handleAuthSuccess} />;
+  }
+
+  // Default: show landing page
+  return <LandingPage onGetStarted={handleGetStarted} />;
 };
 
 export default Index;
