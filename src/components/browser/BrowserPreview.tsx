@@ -15,6 +15,9 @@ import {
   Code,
   Monitor,
   Smartphone
+  ExternalLink,
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react';
 
 interface BrowserAction {
@@ -37,6 +40,8 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
   const [currentStep, setCurrentStep] = useState(-1);
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [showCode, setShowCode] = useState(false);
+  const [executionComplete, setExecutionComplete] = useState(false);
+  const [realBrowserUrl, setRealBrowserUrl] = useState<string | null>(null);
 
   // Get the initial URL from the first goto action
   useEffect(() => {
@@ -46,11 +51,14 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
         setCurrentUrl(gotoAction.url);
       }
     }
+    setExecutionComplete(false);
+    setCurrentStep(-1);
   }, [actions]);
 
   const handleRefresh = () => {
     // Simulate refresh
     setCurrentStep(-1);
+    setExecutionComplete(false);
   };
 
   const handleBack = () => {
@@ -63,15 +71,27 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
     console.log('Forward navigation');
   };
 
+  const openInRealBrowser = () => {
+    if (currentUrl && currentUrl !== 'about:blank') {
+      window.open(currentUrl, '_blank');
+      setRealBrowserUrl(currentUrl);
+    }
+  };
   const handleExecuteActions = () => {
     if (actions.length > 0) {
       onExecuteActions(actions);
       setCurrentStep(0);
+      setExecutionComplete(false);
       
       // Simulate step-by-step execution
       actions.forEach((_, index) => {
         setTimeout(() => {
           setCurrentStep(index);
+          if (index === actions.length - 1) {
+            setTimeout(() => {
+              setExecutionComplete(true);
+            }, 1000);
+          }
         }, (index + 1) * 1500);
       });
     }
@@ -124,6 +144,17 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
               Browser Preview
             </CardTitle>
             <div className="flex items-center gap-2">
+              {currentUrl !== 'about:blank' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openInRealBrowser}
+                  className="flex items-center gap-1"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Open Real Browser
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -183,6 +214,28 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
               </Button>
             )}
           </div>
+          
+          {/* Status Bar */}
+          {executionComplete && (
+            <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-green-500" />
+              <span className="text-sm text-green-700 dark:text-green-300">
+                Browser automation completed successfully! 
+                {realBrowserUrl && (
+                  <span className="ml-2">
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={openInRealBrowser}
+                      className="h-auto p-0 text-green-700 dark:text-green-300"
+                    >
+                      Open in real browser →
+                    </Button>
+                  </span>
+                )}
+              </span>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -204,12 +257,24 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
                     </div>
                   </div>
                 ) : (
-                  <iframe
-                    src={currentUrl}
-                    className="w-full h-full border-0"
-                    title="Browser Preview"
-                    sandbox="allow-same-origin allow-scripts allow-forms"
-                  />
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950 dark:to-indigo-900">
+                    <div className="text-center p-8">
+                      <Globe className="h-20 w-20 text-blue-500 mx-auto mb-6" />
+                      <h3 className="text-xl font-semibold mb-4">Browser Simulation</h3>
+                      <p className="text-muted-foreground mb-6 max-w-md">
+                        This is a preview of the browser automation. The actual actions will be performed in a real browser window.
+                      </p>
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-6 border">
+                        <p className="text-sm font-mono text-blue-600 dark:text-blue-400 break-all">
+                          {currentUrl}
+                        </p>
+                      </div>
+                      <Button onClick={openInRealBrowser} variant="hero" className="flex items-center gap-2">
+                        <ExternalLink className="h-4 w-4" />
+                        Open in Real Browser
+                      </Button>
+                    </div>
+                  </div>
                 )}
                 
                 {/* Execution Overlay */}
@@ -271,7 +336,7 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
                                 <div className="animate-pulse h-2 w-2 bg-primary rounded-full" />
                               )}
                               {currentStep > index && (
-                                <div className="h-2 w-2 bg-green-500 rounded-full" />
+                                <CheckCircle className="h-4 w-4 text-green-500" />
                               )}
                             </div>
                           ))

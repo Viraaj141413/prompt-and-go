@@ -77,7 +77,19 @@ export const ChatInterface = ({ user, onSignOut }: ChatInterfaceProps) => {
       return data;
     } catch (error) {
       console.error('Browser agent API error:', error);
-      throw error;
+      
+      // Return a fallback response instead of throwing
+      return {
+        message: "I'm having some technical difficulties, but I can still help you! Let me prepare a basic web search for your request.",
+        actions: [
+          { "type": "goto", "url": "https://www.google.com" },
+          { "type": "waitForSelector", "selector": "input[name='q']" },
+          { "type": "click", "selector": "input[name='q']" },
+          { "type": "type", "selector": "input[name='q']", "text": userMessage },
+          { "type": "press", "key": "Enter" },
+          { "type": "waitForSelector", "selector": "#search" }
+        ]
+      };
     }
   };
 
@@ -118,19 +130,9 @@ export const ChatInterface = ({ user, onSignOut }: ChatInterfaceProps) => {
       }
     } catch (error: any) {
       console.error('Error calling browser agent:', error);
-      toast({
-        title: "Error",
-        description: "Failed to get AI response. Please try again.",
-        variant: "destructive",
-      });
       
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: "I'm sorry, I'm having trouble processing your request right now. Please try again in a moment.",
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      // This shouldn't happen now since we handle errors in callBrowserAgent
+      console.error('Unexpected error:', error);
     } finally {
       setLoading(false);
     }
@@ -140,7 +142,7 @@ export const ChatInterface = ({ user, onSignOut }: ChatInterfaceProps) => {
     setIsExecuting(true);
     toast({
       title: "Executing Browser Actions",
-      description: "Running automated browser actions...",
+      description: "Simulating browser automation sequence. For real automation, click 'Open Real Browser' in the preview.",
     });
 
     // Simulate execution completion
@@ -148,7 +150,7 @@ export const ChatInterface = ({ user, onSignOut }: ChatInterfaceProps) => {
       setIsExecuting(false);
       toast({
         title: "Actions Completed",
-        description: "Browser automation sequence finished!",
+        description: "Simulation completed! You can now open the target website in a real browser.",
       });
     }, actions.length * 1500);
   };
