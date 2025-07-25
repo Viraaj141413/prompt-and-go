@@ -14,7 +14,7 @@ import {
   Pause,
   Code,
   Monitor,
-  Smartphone
+  Smartphone,
   ExternalLink,
   CheckCircle,
   AlertCircle
