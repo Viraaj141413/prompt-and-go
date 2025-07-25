@@ -17,7 +17,8 @@ import {
   Smartphone,
   ExternalLink,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Camera
 } from 'lucide-react';
 
 interface BrowserAction {
@@ -42,7 +43,53 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
   const [showCode, setShowCode] = useState(false);
   const [executionComplete, setExecutionComplete] = useState(false);
   const [realBrowserUrl, setRealBrowserUrl] = useState<string | null>(null);
+  const [screenshot, setScreenshot] = useState<string | null>(null);
+  const [websocket, setWebsocket] = useState<WebSocket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isCapturingScreenshot, setIsCapturingScreenshot] = useState(false);
 
+  // Initialize WebSocket connection
+  useEffect(() => {
+    const ws = new WebSocket('ws://localhost:3000');
+    
+    ws.onopen = () => {
+      console.log('WebSocket connected');
+      setIsConnected(true);
+      setWebsocket(ws);
+    };
+    
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('WebSocket message received:', data.type);
+        
+        if (data.type === 'screenshot' && data.screenshot) {
+          setScreenshot(data.screenshot);
+          setIsCapturingScreenshot(false);
+          console.log('Screenshot received and set');
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
+    };
+    
+    ws.onclose = () => {
+      console.log('WebSocket disconnected');
+      setIsConnected(false);
+      setWebsocket(null);
+    };
+    
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      setIsConnected(false);
+    };
+    
+    return () => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    };
+  }, []);
   // Get the initial URL from the first goto action
   useEffect(() => {
     if (actions.length > 0) {
@@ -55,10 +102,20 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
     setCurrentStep(-1);
   }, [actions]);
 
+  const captureScreenshot = () => {
+    if (websocket && websocket.readyState === WebSocket.OPEN) {
+      setIsCapturingScreenshot(true);
+      console.log('Sending screenshot request');
+      websocket.send(JSON.stringify({ type: 'screenshot' }));
+    } else {
+      console.error('WebSocket not connected');
+    }
+  };
   const handleRefresh = () => {
     // Simulate refresh
     setCurrentStep(-1);
     setExecutionComplete(false);
+    setScreenshot(null);
   };
 
   const handleBack = () => {
@@ -90,6 +147,10 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
           if (index === actions.length - 1) {
             setTimeout(() => {
               setExecutionComplete(true);
+              // Automatically capture screenshot when execution completes
+              setTimeout(() => {
+                captureScreenshot();
+              }, 1000);
             }, 1000);
           }
         }, (index + 1) * 1500);
@@ -142,8 +203,28 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
             <CardTitle className="text-lg flex items-center gap-2">
               <Globe className="h-5 w-5 text-primary" />
               Browser Preview
+              {isConnected && (
+                <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/20">
+                  Connected
+                </Badge>
+              )}
+              {!isConnected && (
+                <Badge variant="outline" className="text-xs bg-red-500/10 text-red-600 border-red-500/20">
+                  Disconnected
+                </Badge>
+              )}
             </CardTitle>
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={captureScreenshot}
+                disabled={!isConnected || isCapturingScreenshot}
+                className="flex items-center gap-1"
+              >
+                <Camera className="h-4 w-4" />
+                {isCapturingScreenshot ? 'Capturing...' : 'Screenshot'}
+              </Button>
               {currentUrl !== 'about:blank' && (
                 <Button
                   variant="outline"
@@ -236,6 +317,16 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
               </span>
             </div>
           )}
+          
+          {/* WebSocket Connection Status */}
+          {!isConnected && (
+            <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-yellow-500" />
+              <span className="text-sm text-yellow-700 dark:text-yellow-300">
+                WebSocket not connected. Make sure your backend server is running on port 3000.
+              </span>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -248,7 +339,23 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
               <div className={`browser-preview rounded-lg h-full min-h-[400px] relative overflow-hidden ${
                 viewMode === 'mobile' ? 'max-w-sm mx-auto' : ''
               }`}>
-                {currentUrl === 'about:blank' ? (
+                {screenshot ? (
+                  <div className="w-full h-full flex flex-col">
+                    <div className="flex-1 overflow-auto">
+                      <img 
+                        src={`data:image/png;base64,${screenshot}`} 
+                        alt="Browser Screenshot" 
+                        className="w-full h-auto max-w-none"
+                        style={{ minHeight: '100%', objectFit: 'contain' }}
+                      />
+                    </div>
+                    <div className="p-2 bg-muted/50 border-t">
+                      <p className="text-xs text-muted-foreground text-center">
+                        Live screenshot from browser automation
+                      </p>
+                    </div>
+                  </div>
+                ) : currentUrl === 'about:blank' ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
                       <Globe className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
@@ -262,17 +369,28 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
                       <Globe className="h-20 w-20 text-blue-500 mx-auto mb-6" />
                       <h3 className="text-xl font-semibold mb-4">Browser Simulation</h3>
                       <p className="text-muted-foreground mb-6 max-w-md">
-                        This is a preview of the browser automation. The actual actions will be performed in a real browser window.
+                        This is a preview of the browser automation. Click "Screenshot" to capture the current state of the automated browser.
                       </p>
                       <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-6 border">
                         <p className="text-sm font-mono text-blue-600 dark:text-blue-400 break-all">
                           {currentUrl}
                         </p>
                       </div>
-                      <Button onClick={openInRealBrowser} variant="hero" className="flex items-center gap-2">
-                        <ExternalLink className="h-4 w-4" />
-                        Open in Real Browser
-                      </Button>
+                      <div className="flex gap-2 justify-center">
+                        <Button 
+                          onClick={captureScreenshot} 
+                          variant="hero" 
+                          className="flex items-center gap-2"
+                          disabled={!isConnected || isCapturingScreenshot}
+                        >
+                          <Camera className="h-4 w-4" />
+                          {isCapturingScreenshot ? 'Capturing...' : 'Take Screenshot'}
+                        </Button>
+                        <Button onClick={openInRealBrowser} variant="outline" className="flex items-center gap-2">
+                          <ExternalLink className="h-4 w-4" />
+                          Open in Real Browser
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}
