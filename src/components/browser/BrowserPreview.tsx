@@ -50,10 +50,11 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
 
   // Initialize WebSocket connection
   useEffect(() => {
-    const ws = new WebSocket('ws://localhost:3000');
+    console.log('🔌 Connecting to PeaksAI Backend...');
+    const ws = new WebSocket('ws://localhost:3001');
     
     ws.onopen = () => {
-      console.log('WebSocket connected');
+      console.log('✅ Connected to PeaksAI Backend');
       setIsConnected(true);
       setWebsocket(ws);
     };
@@ -61,26 +62,34 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('WebSocket message received:', data.type);
+        console.log('📨 Backend message:', data.type);
         
         if (data.type === 'screenshot' && data.screenshot) {
           setScreenshot(data.screenshot);
           setIsCapturingScreenshot(false);
-          console.log('Screenshot received and set');
+          console.log('📸 Screenshot updated from backend');
+        } else if (data.type === 'action_progress') {
+          setCurrentStep(data.currentStep);
+          console.log(`🎯 Action progress: ${data.currentStep + 1}/${data.totalSteps}`);
+        } else if (data.type === 'execution_complete') {
+          setExecutionComplete(true);
+          console.log('✅ Browser automation completed');
+        } else if (data.type === 'error') {
+          console.error('❌ Backend error:', data.message);
         }
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+        console.error('❌ Error parsing backend message:', error);
       }
     };
     
     ws.onclose = () => {
-      console.log('WebSocket disconnected');
+      console.log('🔌 Disconnected from backend');
       setIsConnected(false);
       setWebsocket(null);
     };
     
     ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error('❌ WebSocket error:', error);
       setIsConnected(false);
     };
     
@@ -135,26 +144,23 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
     }
   };
   const handleExecuteActions = () => {
-    if (actions.length > 0) {
-      onExecuteActions(actions);
-      setCurrentStep(0);
-      setExecutionComplete(false);
+    if (actions.length > 0 && websocket && websocket.readyState === WebSocket.OPEN) {
+      console.log('🚀 Sending actions to backend for execution...');
       
-      // Simulate step-by-step execution
-      actions.forEach((_, index) => {
-        setTimeout(() => {
-          setCurrentStep(index);
-          if (index === actions.length - 1) {
-            setTimeout(() => {
-              setExecutionComplete(true);
-              // Automatically capture screenshot when execution completes
-              setTimeout(() => {
-                captureScreenshot();
-              }, 1000);
-            }, 1000);
-          }
-        }, (index + 1) * 1500);
-      });
+      // Send actions to backend for real browser execution
+      websocket.send(JSON.stringify({
+        type: 'execute_actions',
+        actions: actions
+      }));
+      
+      onExecuteActions(actions);
+      setCurrentStep(-1);
+      setExecutionComplete(false);
+      setScreenshot(null); // Clear old screenshot
+      
+      console.log(`📋 Sent ${actions.length} actions to PeaksAI Backend`);
+    } else if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+      console.error('❌ Backend not connected - cannot execute actions');
     }
   };
 
@@ -323,7 +329,7 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
             <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-yellow-500" />
               <span className="text-sm text-yellow-700 dark:text-yellow-300">
-                WebSocket not connected. Make sure your backend server is running on port 3000.
+                WebSocket not connected. Make sure your backend server is running on port 3001.
               </span>
             </div>
           )}
