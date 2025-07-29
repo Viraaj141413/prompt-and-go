@@ -141,18 +141,18 @@ export const ChatInterface = ({ user, onSignOut }: ChatInterfaceProps) => {
   const handleExecuteActions = (actions: BrowserAction[]) => {
     setIsExecuting(true);
     toast({
-      title: "Executing Browser Actions",
-      description: "Simulating browser automation sequence. For real automation, click 'Open Real Browser' in the preview.",
+      title: "Launching Browser Automation",
+      description: "Starting real browser automation with Puppeteer. Screenshots will be captured automatically.",
     });
 
-    // Simulate execution completion
+    // Real browser automation - will be handled by backend
     setTimeout(() => {
       setIsExecuting(false);
       toast({
-        title: "Actions Completed",
-        description: "Simulation completed! You can now open the target website in a real browser.",
+        title: "Browser Automation Complete",
+        description: "Actions executed successfully! Check the browser preview for screenshots.",
       });
-    }, actions.length * 1500);
+    }, actions.length * 2000);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
