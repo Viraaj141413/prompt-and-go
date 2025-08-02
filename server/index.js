@@ -3,17 +3,25 @@ import { WebSocketServer } from 'ws';
 import puppeteer from 'puppeteer';
 import cors from 'cors';
 import { createServer } from 'http';
+import fetch from 'node-fetch';
 
 const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  credentials: true
+}));
+app.use(express.json({ limit: '50mb' }));
 
 let browser = null;
 let page = null;
 let screenshotInterval = null;
+
+// OpenRouter API configuration
+const OPENROUTER_API_KEY = "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";
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // Initialize browser
 async function initBrowser() {
@@ -29,7 +37,9 @@ async function initBrowser() {
         '--disable-accelerated-2d-canvas',
         '--no-first-run',
         '--no-zygote',
-        '--disable-gpu'
+        '--disable-gpu',
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor'
       ]
     });
     
@@ -157,8 +167,56 @@ async function takeScreenshot(ws) {
     }));
     
     console.log('📸 Screenshot captured and sent');
+    return screenshot;
   } catch (error) {
     console.error('❌ Screenshot failed:', error.message);
+    return null;
+  }
+}
+
+// Analyze screenshot with AI
+async function analyzeScreenshot(screenshot, userMessage) {
+  try {
+    console.log('🤖 Analyzing screenshot with AI...');
+    
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'openrouter/horizon-beta',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `User request: "${userMessage}"\n\nPlease analyze this screenshot and provide insights about what's visible on the page. What actions could be taken next to fulfill the user's request?`
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:image/png;base64,${screenshot}`
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 1000
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenRouter API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error('❌ AI analysis failed:', error);
+    return 'Unable to analyze screenshot at this time.';
   }
 }
 
@@ -231,6 +289,18 @@ wss.on('connection', (ws) => {
           await takeScreenshot(ws);
           break;
           
+        case 'analyze_screenshot':
+          const screenshot = await takeScreenshot(ws);
+          if (screenshot) {
+            const analysis = await analyzeScreenshot(screenshot, message.userMessage || 'Analyze this page');
+            ws.send(JSON.stringify({
+              type: 'screenshot_analysis',
+              analysis: analysis,
+              timestamp: Date.now()
+            }));
+          }
+          break;
+          
         case 'navigate':
           if (message.url) {
             await executeAction({ type: 'goto', url: message.url }, ws);
@@ -259,7 +329,7 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Health check endpoint
+// REST API endpoints
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
@@ -268,13 +338,87 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Initialize browser endpoint
 app.post('/init-browser', async (req, res) => {
   const success = await initBrowser();
   res.json({ 
     success,
     message: success ? 'Browser initialized' : 'Failed to initialize browser'
   });
+});
+
+app.post('/ai-chat', async (req, res) => {
+  try {
+    const { message, includeScreenshot } = req.body;
+    
+    let screenshot = null;
+    if (includeScreenshot && page) {
+      screenshot = await page.screenshot({
+        type: 'png',
+        fullPage: false,
+        encoding: 'base64'
+      });
+    }
+
+    const messages = [
+      {
+        role: 'system',
+        content: 'You are PeaksAI, a browser automation assistant. Help users navigate websites and complete tasks.'
+      }
+    ];
+
+    if (screenshot) {
+      messages.push({
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: message
+          },
+          {
+            type: 'image_url',
+            image_url: {
+              url: `data:image/png;base64,${screenshot}`
+            }
+          }
+        ]
+      });
+    } else {
+      messages.push({
+        role: 'user',
+        content: message
+      });
+    }
+
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'openrouter/horizon-beta',
+        messages: messages,
+        max_tokens: 1000
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenRouter API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    res.json({
+      message: data.choices[0].message.content,
+      screenshot: screenshot
+    });
+
+  } catch (error) {
+    console.error('❌ AI chat error:', error);
+    res.status(500).json({
+      error: 'Failed to process AI request',
+      message: error.message
+    });
+  }
 });
 
 // Graceful shutdown
@@ -297,12 +441,13 @@ process.on('SIGINT', async () => {
 // Start server
 const PORT = process.env.PORT || 3001;
 
-server.listen(PORT, async () => {
+server.listen(PORT, '0.0.0.0', async () => {
   console.log('🌟 ================================');
   console.log(`🚀 PeaksAI Backend Server running on port ${PORT}`);
   console.log('🌟 ================================');
   console.log('🔌 WebSocket server ready for connections');
   console.log('📊 Health check: http://localhost:' + PORT + '/health');
+  console.log('🤖 AI Chat endpoint: http://localhost:' + PORT + '/ai-chat');
   
   // Auto-initialize browser on startup
   console.log('🎬 Auto-initializing browser...');

@@ -359,6 +359,12 @@ export const BrowserPreview = ({ actions, onExecuteActions, isExecuting }: Brows
                       <p className="text-xs text-muted-foreground text-center">
                         Live screenshot from browser automation
                       </p>
+                      {aiAnalysis && (
+                        <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 rounded text-xs">
+                          <p className="font-semibold text-blue-700 dark:text-blue-300 mb-1">🤖 AI Analysis:</p>
+                          <p className="text-blue-600 dark:text-blue-400">{aiAnalysis}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : currentUrl === 'about:blank' ? (

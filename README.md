@@ -1,100 +1,107 @@
-# PeaksAI - Smart Browser Automation Assistant
+# PeaksAI - Desktop Browser Automation Assistant
 
-PeaksAI is an AI-powered browser automation tool that understands natural language commands and converts them into real browser actions using Puppeteer.
+PeaksAI is a standalone desktop application that provides AI-powered browser automation with real browser control, screenshot analysis, and intelligent task execution.
 
 ## 🚀 Features
 
-- **Natural Language Processing**: Tell the AI what you want in plain English
-- **Real Browser Automation**: Uses Puppeteer to control actual Chrome browser
-- **Live Screenshots**: Automatic screenshots captured at 3fps during automation
-- **Real-time Progress**: Watch actions execute step-by-step
-- **OpenRouter Integration**: Powered by DeepSeek R1T Chimera AI model
-- **Split-screen UI**: Chat interface on left, browser preview on right
+- **Real Browser Control**: Launches actual Chrome browser windows (headful mode)
+- **AI-Powered Automation**: Uses OpenRouter's Horizon Beta model for intelligent task planning
+- **Live Screenshot Analysis**: Captures and analyzes browser screenshots with AI vision
+- **Local WebSocket Server**: No external dependencies - runs entirely on your machine
+- **Natural Language Commands**: Tell the AI what you want in plain English
+- **Real-time Progress**: Watch actions execute step-by-step with live feedback
 
 ## 📋 Prerequisites
 
-- Node.js (v18 or later)
-- npm or yarn
-- Chrome/Chromium browser (Puppeteer will install its own if needed)
+- **Node.js** (v18 or later) - [Download here](https://nodejs.org/)
+- **npm** (comes with Node.js)
+- **Chrome/Chromium browser** (Puppeteer will install its own if needed)
 
 ## 🛠️ Installation & Setup
 
-### 1. Install Dependencies
+### 1. Clone or Download the Project
 
 ```bash
-# Install all dependencies
+# If you have git
+git clone <repository-url>
+cd peaksai-desktop
+
+# Or download and extract the ZIP file
+```
+
+### 2. Install Dependencies
+
+```bash
+# Install frontend dependencies
 npm install
 
-# Install backend dependencies
-cd server
-npm install
-cd ..
+# The backend dependencies will be installed automatically when you start the app
 ```
 
-### 2. Start Development Environment
+### 3. Start the Application
 
-#### Option A: Auto-start both frontend and backend
 ```bash
-node start-dev.js
-```
-
-#### Option B: Manual start (separate terminals)
-
-**Terminal 1 - Frontend:**
-```bash
-npm run dev
-```
-
-**Terminal 2 - Backend:**
-```bash
-cd server
+# Start the complete application (frontend + backend)
 npm start
 ```
 
-### 3. Access the Application
-
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:3001
-- **Health Check**: http://localhost:3001/health
+This command will:
+- Install backend dependencies if needed
+- Start the frontend server on http://localhost:5173
+- Start the backend WebSocket server on port 3001
+- Launch a real Chrome browser window
+- Automatically open the application in your default browser
 
 ## 🎯 How to Use
 
-1. **Sign Up/Login**: Create an account or sign in
-2. **Give Commands**: Type natural language commands like:
-   - "Order me a latte from Starbucks"
-   - "Find the best laptop deals on Amazon"
-   - "Book a flight to New York"
-   - "Search for Python tutorials"
-3. **Watch Automation**: The AI will:
-   - Generate browser actions
-   - Launch a real Chrome browser
-   - Execute actions step-by-step
-   - Capture screenshots automatically
-4. **View Results**: See live progress in the browser preview panel
+### 1. Sign Up/Login
+- Create an account or sign in when prompted
+- This enables access to the chat interface
+
+### 2. Give Natural Language Commands
+Type commands like:
+- **Shopping**: "Find me wireless headphones under $100"
+- **Food**: "Order me a coffee and pastry"
+- **Travel**: "Search for flights from New York to London"
+- **Research**: "Find information about electric cars"
+- **Navigation**: "Go to Amazon and search for laptops"
+
+### 3. Watch Real Browser Automation
+- The AI converts your request into browser actions
+- A real Chrome window opens and executes the actions
+- Screenshots are captured automatically every 3 seconds
+- View live progress in the browser preview panel
+
+### 4. AI Screenshot Analysis
+- Click the "🤖 Analyze" button to get AI insights about the current page
+- The AI can suggest next steps or explain what's visible
 
 ## 🏗️ Architecture
 
 ### Frontend (React + Vite)
 - **Port**: 5173
-- **UI**: Shadcn/UI components
-- **State**: React hooks
-- **Communication**: WebSocket to backend
+- **Framework**: React with TypeScript
+- **UI**: Shadcn/UI components with Tailwind CSS
+- **Communication**: WebSocket client for real-time updates
 
 ### Backend (Node.js + Express)
 - **Port**: 3001
-- **Browser**: Puppeteer + Chrome
-- **API**: Express.js
-- **WebSocket**: Real-time communication
-- **AI**: OpenRouter API (DeepSeek model)
+- **Browser Engine**: Puppeteer with Chrome
+- **WebSocket Server**: Real-time communication with frontend
+- **AI Integration**: OpenRouter API with Horizon Beta model
+- **Screenshot Processing**: Base64 encoding for AI analysis
 
-### Supabase Edge Functions
-- **Authentication**: User management
-- **AI Processing**: Convert commands to actions
-- **API**: OpenRouter integration
+### Key Components
+- **WebSocket Server**: Handles real-time browser control commands
+- **Puppeteer Integration**: Controls actual Chrome browser instances
+- **AI Vision**: Analyzes screenshots and provides intelligent responses
+- **Action Executor**: Converts AI commands into browser actions
 
 ## 🔧 Configuration
 
 ### Environment Variables (Optional)
+Create a `.env` file in the root directory:
+
 ```bash
 # Backend server port (default: 3001)
 PORT=3001
@@ -104,25 +111,29 @@ HEADLESS=false  # Set to true to run browser in background
 ```
 
 ### Browser Settings
-The browser launches with these settings:
+The browser launches with these optimized settings:
 - **Headless**: false (visible browser window)
 - **Viewport**: 1280x720
 - **Screenshot Interval**: 3 seconds
-- **Auto-initialization**: Starts browser on server launch
+- **Security**: Disabled web security for automation
 
 ## 📁 Project Structure
 
 ```
-├── src/                    # Frontend React app
+peaksai-desktop/
+├── src/                    # Frontend React application
 │   ├── components/        # UI components
+│   │   ├── auth/         # Authentication components
+│   │   ├── browser/      # Browser preview and controls
+│   │   ├── chat/         # Chat interface
+│   │   └── ui/           # Reusable UI components
 │   ├── pages/            # Route pages
-│   └── lib/              # Utilities
+│   └── lib/              # Utilities and helpers
 ├── server/               # Backend Node.js server
 │   ├── index.js          # Main server file
 │   └── package.json      # Backend dependencies
-├── supabase/             # Supabase configuration
-│   └── functions/        # Edge functions
-├── start-dev.js          # Development startup script
+├── start-app.js          # Application launcher script
+├── package.json          # Frontend dependencies
 └── README.md            # This file
 ```
 
@@ -143,13 +154,18 @@ node index.js
 ### WebSocket Connection Failed
 - Make sure backend is running on port 3001
 - Check firewall settings
-- Verify no other apps are using the port
+- Verify no other applications are using the ports
 
 ### Frontend Build Errors
 ```bash
 npm install
 npm run dev
 ```
+
+### AI API Issues
+- The application includes fallback responses if the AI service is unavailable
+- Check your internet connection for AI features
+- Basic browser automation will still work without AI
 
 ## 🎮 Example Commands
 
@@ -158,47 +174,74 @@ Try these commands to test the system:
 **Shopping:**
 - "Find me wireless headphones on Amazon under $100"
 - "Search for running shoes on Nike website"
+- "Compare laptop prices on different sites"
 
-**Food Delivery:**
+**Food & Delivery:**
 - "Order me a pizza from Domino's"
 - "Find coffee shops near me"
+- "Search for healthy meal delivery options"
 
-**Travel:**
+**Travel & Booking:**
 - "Search for flights from New York to London"
-- "Find hotels in San Francisco"
+- "Find hotels in San Francisco for next weekend"
+- "Check train schedules between cities"
 
-**General:**
+**Research & Information:**
 - "Search for JavaScript tutorials"
 - "Find the weather forecast for tomorrow"
+- "Research electric car reviews"
 
-## 🔐 Security Notes
+**Direct Navigation:**
+- "Go to Google and search for news"
+- "Open YouTube and find cooking videos"
+- "Navigate to GitHub and search for React projects"
 
-- API keys are stored in Supabase Edge Functions
-- Browser runs in non-headless mode for transparency
-- Local execution only - no cloud browser instances
-- WebSocket communication is local only
+## 🔐 Security & Privacy
 
-## 🚀 Production Deployment
+- **Local Execution**: Everything runs on your local machine
+- **No Cloud Dependencies**: Browser automation happens locally
+- **API Security**: OpenRouter API key is used securely for AI features
+- **Data Privacy**: Screenshots and data stay on your device
+- **Transparent Operation**: Browser runs in visible mode for full transparency
 
-For production use:
-1. Set `HEADLESS=true` for background browser operation
-2. Configure proper error handling and timeouts
-3. Set up process monitoring (PM2, etc.)
-4. Configure HTTPS for WebSocket connections
-5. Set up proper logging and monitoring
+## 🚀 Advanced Usage
+
+### Custom Browser Actions
+The system supports these browser actions:
+- `goto`: Navigate to URLs
+- `click`: Click elements
+- `type`: Enter text
+- `press`: Keyboard shortcuts
+- `scroll`: Page scrolling
+- `screenshot`: Capture images
+- `waitForSelector`: Wait for elements
+- `hover`: Mouse hover effects
+
+### API Endpoints
+- **Health Check**: `GET http://localhost:3001/health`
+- **AI Chat**: `POST http://localhost:3001/ai-chat`
+- **Browser Init**: `POST http://localhost:3001/init-browser`
+
+### WebSocket Events
+- `execute_actions`: Run browser automation
+- `screenshot`: Capture current page
+- `analyze_screenshot`: AI analysis of current page
+- `navigate`: Direct navigation
 
 ## 📝 License
 
-This project is for demonstration purposes. Ensure compliance with website terms of service when automating browser actions.
+This project is for demonstration and educational purposes. Ensure compliance with website terms of service when automating browser actions.
+
+## 🤝 Support
+
+If you encounter issues:
+1. Check the troubleshooting section above
+2. Ensure all prerequisites are installed
+3. Verify ports 3001 and 5173 are available
+4. Check the console output for error messages
 
 ---
 
 **Made with ❤️ using React, Node.js, Puppeteer, and AI**
 
----
-
-## Original Lovable Project
-
-**URL**: https://lovable.dev/projects/93708202-fdf7-4ae5-ba1a-ef58cadf0441
-
-This project was created with Lovable and enhanced with local browser automation capabilities.
+**Powered by OpenRouter's Horizon Beta AI Model**

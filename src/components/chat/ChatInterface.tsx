@@ -113,7 +113,7 @@ export const ChatInterface = ({ user, onSignOut }: ChatInterfaceProps) => {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response.message || 'I\'ve analyzed your request and prepared browser actions.',
+        content: response.message || "I've analyzed your request and prepared browser actions.",
         timestamp: new Date(),
         actions: response.actions || []
       };
@@ -126,6 +126,12 @@ export const ChatInterface = ({ user, onSignOut }: ChatInterfaceProps) => {
           title: "Browser Actions Ready!",
           description: `${response.actions.length} actions prepared. Click Execute in the browser preview to run them.`,
           duration: 5000,
+        });
+      } else if (response.message) {
+        toast({
+          title: "AI Response Received",
+          description: "The AI has provided guidance based on the current page.",
+          duration: 3000,
         });
       }
     } catch (error: any) {
